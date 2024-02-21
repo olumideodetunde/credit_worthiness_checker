@@ -34,25 +34,39 @@ person_data = pd.read_parquet("data/raw/home-credit-credit-risk-model-stability/
 
 #%%
 # getting the columns from the dataframes
-def get_columns(df:pd.DataFrame, col_list:list):
+def get_columns(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
     return df[col_list]
 
 prev_app = get_columns(previous_application_df, ["case_id", "credamount_590A", "outstandingdebt_522A","mainoccupationinc_437A", "familystate_726L", "childnum_21L","credacc_status_367L"])
-personal = get_columns(person_data, ["case_id", "mainoccupationinc_384A", "childnum_185L", "gender_992L", "sex_738L"])
+personal = get_columns(person_data, ["case_id", "mainoccupationinc_384A", "childnum_185L", "gender_992L", "sex_738L", "num_group1"])
 static_1 = get_columns(static_data, ["case_id", "maininc_215A"])
 static_2 = get_columns(static_data_2, ["case_id", "dateofbirth_337D", "dateofbirth_342D"])
 
 #%%
-# Now i need to start prepeocessing each dataframe with the columns I have selected - this is to ensure that the data is clean and ready to be merged into the credit_base_df to create the simple dataset
-
-
+# Now I need to start preprocessing each dataframe with the columns I have selected - this is to ensure that the data is clean and ready to be merged into the credit_base_df to create the simple dataset
 #date of bith from static_2
-def fuse_date_of_birth(df:pd.DataFrame, col_list:list):
-    df['dateofbirth'] = df[col_list[0]].fillna("") + df[col_list[1]].fillna("")
-    df['dateofbirth'] = df['dateofbirth'].replace("", None)
-    return df
 
-static_dob = static_2.copy()
-static_dob = fuse_date_of_birth(static_dob, ["dateofbirth_337D", "dateofbirth_342D"])
+def get_dob(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
+    df['dateofbirth'] = df[col_list[1]].fillna("") + df[col_list[2]].fillna("")
+    df['dateofbirth'] = df['dateofbirth'].replace("", None)
+    return df[[col_list[0], 'dateofbirth']]
+
+dob_df = static_2.copy()
+dob_df = get_dob(dob_df, ["case_id", "dateofbirth_337D", "dateofbirth_342D"])
 
 # %%
+# Sorting gender from personal dataframe - accouting for the depth of the data (i.e num_group1: this is historical data)
+# For the personal dataframe I am keeping the first instance because the gender is static
+def get_gender(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
+    df_uniq = df.drop_duplicates(subset=col_list[0], keep="first")
+    df_uniq = df_uniq.rename(columns={col_list[1] : "gender"})
+    return df_uniq[[col_list[0], 'gender']]
+
+gender_df = get_gender(personal, ["case_id", "sex_738L"])
+
+#%%
+# getting it from 2 dataframes; personal and previous_application_df
+
+def get_children_num(dfs:list, col_list:list) -> pd.DataFrame:
+    
+    pass
