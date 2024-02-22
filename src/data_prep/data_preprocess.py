@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 #From literature review, I have selected the following features to build a simple dataset
 # 1.Age - found in static_data_2 - column name: dateofbirth_337D, dateofbirth_342D
 # 2.Main income amount -  found in static data - column name: maininc_215A & found in person_data - column name: mainoccupationinc_384A & found in previous_application_df - column name: mainoccupationinc_437A
-# 3.Marital status - found in previous_application_df - column name: familystate_726L
+# 3.Marital status - found in previous_application_df - column name: familystate_726L & found in person_data - column name: familystate_447L
 # 4.Gender - found in person_data - column: gender_992L & found in person_data - column: sex_738L
 # 5.Duration of loan - 
 # 6.number of children - found in previous_application_df - column name:childnum_21L  & person_data - column name: childnum_185L
@@ -33,16 +33,6 @@ static_data_2 = pd.read_parquet("data/raw/home-credit-credit-risk-model-stabilit
 person_data = pd.read_parquet("data/raw/home-credit-credit-risk-model-stability/parquet_files/train/train_person_1.parquet")
 
 #%%
-# getting the columns from the dataframes
-def get_columns(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
-    return df[col_list]
-
-prev_app = get_columns(previous_application_df, ["case_id", "credamount_590A", "outstandingdebt_522A","mainoccupationinc_437A", "familystate_726L", "childnum_21L","credacc_status_367L"])
-personal = get_columns(person_data, ["case_id", "mainoccupationinc_384A", "childnum_185L", "gender_992L", "sex_738L", "num_group1"])
-static_1 = get_columns(static_data, ["case_id", "maininc_215A"])
-static_2 = get_columns(static_data_2, ["case_id", "dateofbirth_337D", "dateofbirth_342D"])
-
-#%%
 # Now I need to start preprocessing each dataframe with the columns I have selected - this is to ensure that the data is clean and ready to be merged into the credit_base_df to create the simple dataset
 #date of bith from static_2
 
@@ -51,22 +41,51 @@ def get_dob(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
     df['dateofbirth'] = df['dateofbirth'].replace("", None)
     return df[[col_list[0], 'dateofbirth']]
 
-dob_df = static_2.copy()
-dob_df = get_dob(dob_df, ["case_id", "dateofbirth_337D", "dateofbirth_342D"])
+dob_df = get_dob(static_data_2, ["case_id", "dateofbirth_337D", "dateofbirth_342D"])
 
 # %%
 # Sorting gender from personal dataframe - accouting for the depth of the data (i.e num_group1: this is historical data)
 # For the personal dataframe I am keeping the first instance because the gender is static
 def get_gender(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
+    df = df[col_list]
     df_uniq = df.drop_duplicates(subset=col_list[0], keep="first")
-    df_uniq = df_uniq.rename(columns={col_list[1] : "gender"})
-    return df_uniq[[col_list[0], 'gender']]
+    return df_uniq
 
-gender_df = get_gender(personal, ["case_id", "sex_738L"])
+gender_df = get_gender(person_data, ["case_id", "sex_738L"])
 
 #%%
 # getting it from 2 dataframes; personal and previous_application_df
 
-def get_children_num(dfs:list, col_list:list) -> pd.DataFrame:
+#Looking within the previous application: I will use the childnum_21L column to select the first value and if no first value,
+# i will look at other instances and fill with the value found if not then null
+
+def get_children_num(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
     
+    #select the case_id and childnum colum
+    df = df[col_list]
+    #drop rows with one null value
+    df = df.dropna(subset=[col_list[1]])
+    #drop duplicates and keep the most recent value
+    df_uniq = df.drop_duplicates(subset=col_list[0], keep="last")
+    return df_uniq
+
+child_df1 = get_children_num(previous_application_df, ["case_id", "childnum_21L"])
+child_df2 = get_children_num(person_data, ["case_id", "childnum_185L"])
+
+# %%
+# Deal with getting the marital status from the previous_application_df
+
+def get_familystate(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
+    df = df[col_list]
+    df = df.dropna(subset=[col_list[1]])
+    df_uniq = df.drop_duplicates(subset=col_list[0], keep="last")
+    return df_uniq[[col_list[0], col_list[1]]]
+    
+famstate_df1 = get_familystate(previous_application_df, ["case_id", "familystate_726L"])
+famstate_df2 = get_familystate(person_data, ["case_id", "familystate_447L"])
+
+# %%
+
+def get_recent_income(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
+    df = df[col_list]
     pass
