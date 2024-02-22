@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 # 4.Gender - found in person_data - column: gender_992L & found in person_data - column: sex_738L
 # 5.Duration of loan - 
 # 6.number of children - found in previous_application_df - column name:childnum_21L  & person_data - column name: childnum_185L
-# 7.Loan amount on previous application - found in previous_application_df - column name:credamount_370L
+# 7. 
 # 8.existing previous credit status if any - found in previous_application_df - column name: credacc_status_367L 
 # 9.Existing debt amount - found in previous_application_df - column name: outstandingdebt_522A
 
@@ -113,5 +113,22 @@ def get_credit_status(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
     return df_uniq
 
 credit_status_df = get_credit_status(previous_application_df, ["case_id", "credacc_status_367L"])
+
+# %%
+#Now i need to start merging or concatenating the dataframes to create the simple dataset
+
+#Function to merge dataframes from the previous steps
+def merge_dfs(dfs:list, on_col:str, how:str) -> pd.DataFrame:
+    df = pd.merge(dfs[0], dfs[1], on=on_col, how=how)
+    return df
+
+# %%
+#Function to create a new column for  the merged dataframes because they hold the same information in 2 different columns
+def create_df(df:pd.DataFrame, new_col:str) -> pd.DataFrame:
+    col_list = list(df.columns)
+    df[new_col] = df[col_list[1]].fillna(None).astype(str) + df[col_list[2]].fillna(None).astype(str)
+    df[new_col] = df[col_list[1]] + df[col_list[2]]
+    df[new_col] = df[new_col].replace("", 'nan')
+    return df[[col_list[0], new_col]]
 
 # %%
