@@ -1,4 +1,4 @@
-#This script is used to idenitfy features from the home credit dataset and create a simple dataset for model building
+#This script is used to idenitfy features from the home credit dataset and create a simple dataset for model building ans stores intermediate output in intermedoate foldeer
 
 #%%
 import pandas as pd
@@ -79,7 +79,7 @@ def get_familystate(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
     df = df[col_list]
     df = df.dropna(subset=[col_list[1]])
     df_uniq = df.drop_duplicates(subset=col_list[0], keep="last")
-    return df_uniq[[col_list[0], col_list[1]]]
+    return df_uniq
     
 famstate_df1 = get_familystate(previous_application_df, ["case_id", "familystate_726L"])
 famstate_df2 = get_familystate(person_data, ["case_id", "familystate_447L"])
@@ -88,4 +88,30 @@ famstate_df2 = get_familystate(person_data, ["case_id", "familystate_447L"])
 
 def get_recent_income(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
     df = df[col_list]
-    pass
+    df = df.dropna(subset=[col_list[1]])
+    df_uniq = df.drop_duplicates(subset=col_list[0], keep="last")
+    return df_uniq
+
+income_df1 = get_recent_income(static_data, ["case_id", "maininc_215A"])
+income_df2 = get_recent_income(person_data, ["case_id", "mainoccupationinc_384A"])
+income_df3 = get_recent_income(previous_application_df, ["case_id", "mainoccupationinc_437A"])
+
+# %%
+def get_existing_debt(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
+    df = df[col_list]
+    df = df.dropna(subset=[col_list[1]])
+    df_uniq = df.drop_duplicates(subset=col_list[0], keep="last")
+    return df_uniq
+
+debt_df = get_existing_debt(previous_application_df, ["case_id", "outstandingdebt_522A"])
+
+# %%
+def get_credit_status(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
+    df = df[col_list]
+    df = df.dropna(subset=[col_list[1]])
+    df_uniq = df.drop_duplicates(subset=col_list[0], keep="last")
+    return df_uniq
+
+credit_status_df = get_credit_status(previous_application_df, ["case_id", "credacc_status_367L"])
+
+# %%
