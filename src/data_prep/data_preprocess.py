@@ -32,16 +32,46 @@ static_data = pd.read_parquet("data/raw/home-credit-credit-risk-model-stability/
 static_data_2 = pd.read_parquet("data/raw/home-credit-credit-risk-model-stability/parquet_files/train/train_static_cb_0.parquet")
 person_data = pd.read_parquet("data/raw/home-credit-credit-risk-model-stability/parquet_files/train/train_person_1.parquet")
 
+
 #%%
-# Now I need to start preprocessing each dataframe with the columns I have selected - this is to ensure that the data is clean and ready to be merged into the credit_base_df to create the simple dataset
-#date of bith from static_2
+#Put it all into a class but refine the functions to be more modular
 
-def get_dob(df:pd.DataFrame, col_list:list) -> pd.DataFrame:
-    df['dateofbirth'] = df[col_list[1]].fillna("") + df[col_list[2]].fillna("")
-    df['dateofbirth'] = df['dateofbirth'].replace("", None)
-    return df[[col_list[0], 'dateofbirth']]
+def get_inidivual_feature(df:pd.DataFrame, col_list:list, recency:str) -> pd.DataFrame:
+    df = df[col_list]
+    df = df.dropna(subset=[col_list[1]])
+    df_uniq = df.drop_duplicates(subset=col_list[0], keep=recency)
+    return df_uniq
 
-dob_df = get_dob(static_data_2, ["case_id", "dateofbirth_337D", "dateofbirth_342D"])
+def merge_features_into_df(dfs:list, on_col:str, join_type:str) -> pd.DataFrame:
+    df_combined = pd.merge(dfs[0], dfs[1], on=on_col, how=join_type)
+    return df_combined
+
+def create_consolicated_df(df:pd.DataFrame, new_col:str) -> pd.DataFrame:
+    col_list = list(df.columns)
+    df[new_col] = df[col_list[1]].fillna('').astype(str) + df[col_list[2]].fillna('').astype(str)
+    df[new_col] = df[new_col].replace({"NaN" : ""})
+    return df[[col_list[0], new_col]]
+
+def handle_feature_datatype(df:pd.DataFrame, col_data:dict) -> pd.DataFrame:
+    for col_name, datatype in col_data.items():
+        if datatype == "string":
+            df.loc[:, col_name] = df[col_name].astype(str)
+        elif datatype == "integer":
+            df.loc[:, col_name] = df[col_name].astype(int)
+        elif datatype == "date":
+            df.loc[:, col_name] = pd.to_datetime(df[col_name], 
+                                format="%Y-%m-%d", errors='coerce').dt.date
+        else:
+            df.loc[:, col_name] = df[col_name].astype(float)
+    return df
+    
+#%%
+# Tested for the dob feature
+dob_df1 = get_feature(static_data_2, ["case_id", "dateofbirth_337D"], "last")
+dob_df2 = get_feature(static_data_2, ["case_id", "dateofbirth_342D"], "last")
+dob_comb = merge_dfs([age_df1, age_df2], "case_id", "outer")
+dob_df = create_consolicated_df(age_comb, "dateofbirth")
+dob_df = handle_feature_datatype(age_df, {"case_id":"integer", "dateofbirth":"date"})
 
 # %%
 # Sorting gender from personal dataframe - accouting for the depth of the data (i.e num_group1: this is historical data)
@@ -118,17 +148,28 @@ credit_status_df = get_credit_status(previous_application_df, ["case_id", "creda
 #Now i need to start merging or concatenating the dataframes to create the simple dataset
 
 #Function to merge dataframes from the previous steps
-def merge_dfs(dfs:list, on_col:str, how:str) -> pd.DataFrame:
-    df = pd.merge(dfs[0], dfs[1], on=on_col, how=how)
-    return df
+def merge_dfs(dfs:list, on_col:str, join_type:str) -> pd.DataFrame:
+    df_combined = pd.merge(dfs[0], dfs[1], on=on_col, how=join_type)
+    return df_combined
+
+famstate_df = merge_dfs([famstate_df1, famstate_df2], "case_id", "outer")
 
 # %%
 #Function to create a new column for  the merged dataframes because they hold the same information in 2 different columns
-def create_df(df:pd.DataFrame, new_col:str) -> pd.DataFrame:
+def create_consolicated_df(df:pd.DataFrame, new_col:str) -> pd.DataFrame:
     col_list = list(df.columns)
-    df[new_col] = df[col_list[1]].fillna(None).astype(str) + df[col_list[2]].fillna(None).astype(str)
-    df[new_col] = df[col_list[1]] + df[col_list[2]]
-    df[new_col] = df[new_col].replace("", 'nan')
+    df[new_col] = df[col_list[1]].fillna('').astype(str) + df[col_list[2]].fillna('').astype(str)
+    df[new_col] = df[new_col].replace({"NaN" : ""})
     return df[[col_list[0], new_col]]
 
 # %%
+def handle_column_datatype(df:pd.DataFrame, col_data:dict) -> pd.DataFrame:
+    
+    for col_name, datatype in col_data.items():
+        if datatype == "string":
+            df.loc[:, col_name] = df[col_name].astype(str)
+        elif datatype == "integer":
+            df.loc[:, col_name] = df[col_name].astype(int)
+        else:
+            df.loc[:, col_name] = df[col_name].astype(float)
+    return df
