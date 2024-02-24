@@ -1,5 +1,5 @@
 ''' 
-This script holds functions to preprocess the data for model building
+This script holds functions to preprocess the data for creating a simple dataset
 '''
 import pandas as pd
 def get_individual_feature(df:pd.DataFrame, col_list:list, recency:str) -> pd.DataFrame:
