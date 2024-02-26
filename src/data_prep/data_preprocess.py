@@ -2,6 +2,14 @@
 This script holds functions to preprocess the data for creating a simple dataset
 '''
 import pandas as pd
+
+def read_data(file_path:str) -> pd.DataFrame:
+    '''
+    This function is to read parent data from a file and return a dataframe
+    '''
+    df = pd.read_parquet(file_path)
+    return df
+
 def get_individual_feature(df:pd.DataFrame, col_list:list, recency:str) -> pd.DataFrame:
     '''
     This function is to get the individual feature from a dataframe with many features
