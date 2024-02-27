@@ -15,22 +15,26 @@ base_data, static_data, person_data, previous_application = read_parent_data(["d
                                                                     "data/raw/home-credit-credit-risk-model-stability/parquet_files/train/train_static_cb_0.parquet",
                                                                     "data/raw/home-credit-credit-risk-model-stability/parquet_files/train/train_person_1.parquet",
                                                                     "data/raw/home-credit-credit-risk-model-stability/parquet_files/train/train_applprev_1_1.parquet"])
+
 #%%
-def create_feature_df(feature_name:str, parentfeature_dict:dict, feature_recency:str, join_method:str, proposed_datatype:str):
-    if len(parentfeature_dict) > 1:
-        n = len(parentfeature_dict)
-        features = []
-        for i in range(n):
-            feature_df[i] = dp.get_individual_feature(parentfeature_dict[i], ["case_id", feature_name], feature_recency)
-            features.append(feature_df[i])
-        feature_comb = dp.merge_features_into_df(feature_dfs, "case_id", join_method)
-        feature_df = dp.create_consolicated_df(feature_comb, feature_name)
-        feature_df = dp.handle_features_datatype(feature_df, proposed_datatype)
+
+def create_feature_df(feature_name:str, parentfeature_dict:dict, feature_recency:str, join_method:str, proposed_datatype:dict):
+    n = len(parentfeature_dict)
+    features = []
+    for key, value in parentfeature_dict.items():
+        print(key, value) #key is issue is ensuring the key is a dataframe
+        feature= dp.get_individual_feature(key, value, feature_recency)
+        features.append(feature_i)
+    features_combined = dp.merge_features_into_df(dfs=features, on_col="case_id", join_type=join_method)
+    feature_df = dp.create_consolicated_df(df=features_combined, new_colname=feature_name)
+    feature_df = dp.handle_features_datatype(df=feature_df, col_datatype=proposed_datatype)
     return feature_df
 
-# dob_df = create_feature_df("dateofbirth", {static_data:['case_id', "dateofbirth_337D"], "person_data": person_data},
-#                            "last", "outer", {"case_id":"integer", "dateofbirth":"date"})
-
+dob_df = create_feature_df(feature_name="dateofbirth", 
+                           parentfeature_dict={"static_data":['case_id', "dateofbirth_337D"]}, 
+                           feature_recency="last", 
+                           join_method="outer",
+                           proposed_datatype={"case_id":"integer", "dateofbirth":"date"})
 
 #%%
 
