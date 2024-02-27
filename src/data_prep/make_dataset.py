@@ -21,18 +21,17 @@ base_data, static_data, person_data, previous_application = read_parent_data(["d
 def create_feature_df(feature_name:str, parentfeature_dict:dict, feature_recency:str, join_method:str, proposed_datatype:dict):
     n = len(parentfeature_dict)
     features = []
-    for key, value in parentfeature_dict.items():
-        print(key, value) #key is issue is ensuring the key is a dataframe
-        feature= dp.get_individual_feature(key, value, feature_recency)
-        features.append(feature_i)
-    features_combined = dp.merge_features_into_df(dfs=features, on_col="case_id", join_type=join_method)
-    feature_df = dp.create_consolicated_df(df=features_combined, new_colname=feature_name)
+    for key, value in parentfeature_dict.items(): #include enumerate to handle more than one dataframe
+        feature = dp.get_individual_feature(value[0], value[1], feature_recency)
+        features.append(feature)
+    #features_combined = dp.merge_features_into_df(dfs=features, on_col="case_id", join_type=join_method) #deal with this method to handle more than one dataframe
+    feature_df = dp.create_consolicated_df(df=features[0], new_colname=feature_name)
     feature_df = dp.handle_features_datatype(df=feature_df, col_datatype=proposed_datatype)
     return feature_df
 
-dob_df = create_feature_df(feature_name="dateofbirth", 
-                           parentfeature_dict={"static_data":['case_id', "dateofbirth_337D"]}, 
-                           feature_recency="last", 
+dob_df = create_feature_df(feature_name="dateofbirth",
+                           parentfeature_dict={"One":(static_data, ['case_id', "dateofbirth_337D"])},
+                           feature_recency="last",
                            join_method="outer",
                            proposed_datatype={"case_id":"integer", "dateofbirth":"date"})
 
@@ -48,7 +47,7 @@ def split_ml_dataset():
 
 
 #%%
-def save_ml_dataset():
+def save_traindev_dataset():
     pass
 
 
