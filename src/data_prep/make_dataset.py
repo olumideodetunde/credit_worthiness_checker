@@ -1,6 +1,12 @@
+#%%
 '''This module is used to create the machine learning dataset'''
+import os
+import sys
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.append(PROJECT_ROOT)
 import pandas as pd
 from sklearn.model_selection import train_test_split
+from src.data_prep import logger
 from src.data_prep import data_preprocess as dp
 
 def read_parent_data(file_paths:list) -> list:
@@ -122,13 +128,25 @@ def main(input_paths:list, output_path:str):
     save_traindev_dataset(dataset={"train":ml_data[0], "dev":ml_data[1]}, output_path=output_path)
 
 if __name__ == "__main__":
-    INPUT_LIST = [
-    "data/raw/parquet_files/train/train_base.parquet",
-    "data/raw/parquet_files/train/train_static_cb_0.parquet",
-    "data/raw/parquet_files/train/train_person_1.parquet",
-    "data/raw/parquet_files/train/train_applprev_1_1.parquet"
-    ]
-    OUTPUT_DIR = "data/output"
-    main(input_paths=INPUT_LIST, output_path=OUTPUT_DIR)
+
+    PROJECT_STAGE = "Dataset Preparation"
+    try:
+        logger.info(">>>>>> Started <<<<<< %s", PROJECT_STAGE)
+        INPUT_LIST = [
+        "data/raw/parquet_files/train/train_base.parquet",
+        "data/raw/parquet_files/train/train_static_cb_0.parquet",
+        "data/raw/parquet_files/train/train_person_1.parquet",
+        "data/raw/parquet_files/train/train_applprev_1_1.parquet"
+        ]
+        OUTPUT_DIR = "data/output"
+        main(input_paths=INPUT_LIST, output_path=OUTPUT_DIR)
+        logger.info(">>>>>> Ended <<<<<< %s", PROJECT_STAGE)
+
+    except Exception as e:
+        logger.exception(e)
+        raise e
 
 #End of file
+
+
+# %%
