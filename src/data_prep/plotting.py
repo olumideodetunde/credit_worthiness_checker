@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 train_df = pd.read_parquet("data/output/train.parquet")
 dev_df = pd.read_parquet("data/output/dev.parquet")
 
-# %%
+#%%
 # Confirm that all the datatypes of the columns
 def _check_dtypes(df):
     for col in df.columns:
@@ -57,7 +57,7 @@ a
 def display_cat_summary(df:pd.DataFrame, cat_cols:list) -> None:
     cat_df = df[cat_cols]
     figs, axes = plt.subplots(3,1)
-    
+
     for i, column in enumerate(cat_df.columns):
         counts = cat_df[column].value_counts()
         counts.plot(
@@ -65,11 +65,11 @@ def display_cat_summary(df:pd.DataFrame, cat_cols:list) -> None:
             ax = axes.flatten()[i],
             fontsize = "large"
         ).set_title(column)
-    figs.set_size_inches(15, 12)
-    #plt.tight_layout()
+    figs.set_size_inches(7, 15)
+    plt.tight_layout()
     plt.show()
 
-display_cat_summary(train_df, cat_cols=['gender', 'marital_status', 'credit_status'])
+display_cat_summary(train_df, cat_cols=['gender', 'credit_status', 'marital_status'])
 
 # %%
 #Look at date related columns, create new feature - age
@@ -79,8 +79,23 @@ def create_age(df:pd.DataFrame, date_cols:list) -> pd.DataFrame:
 
 train_df = create_age(train_df, ["date_decision", "dateofbirth"])
 dev_df = create_age(dev_df, ["date_decision", "dateofbirth"])
+train_df
 
 # %%
-#Exploring relationships between feautures guided by questions/business understanding & target variable
+#Relationships between numerical columns
+sm = pd.plotting.scatter_matrix(train_df[['no_of_children', 'debt', 'income']],
+                                figsize=(6, 6))
 
-#Does the age affect the 
+for subaxis in sm:
+    for ax in subaxis:
+        ax.xaxis.set_ticks([])
+        ax.yaxis.set_ticks([])
+        ax.xaxis.label.set_rotation(45)
+    ax.yaxis.label.set_rotation(180)
+pic = sm[0][0].get_figure()
+
+# %%
+corr = train_df[['no_of_children', 'debt', 'income', 'age']].corr(method='pearson')
+sns.heatmap(corr, annot=True)
+plt.show()
+# %%
