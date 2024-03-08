@@ -1,4 +1,3 @@
-#%%
 '''This module is used to create the machine learning dataset'''
 import os
 import sys
@@ -148,5 +147,3 @@ if __name__ == "__main__":
 
 #End of file
 
-
-# %%
