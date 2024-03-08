@@ -7,6 +7,45 @@ import matplotlib.pyplot as plt
 #%%
 #Turn this into a class 
 
+class Plot:
+    def __init__(self, file_path:str):
+        self.file_path = file_path
+        self.df = None
+
+    def load_data(self) -> pd.DataFrame:
+        self.df = pd.read_parquet(self.file_path)
+        return self.df
+
+    def check_dtypes(self) -> None:
+        for col in self.df.columns:
+            print(f"{col}: {self.df[col].dtype}")
+            
+    def convert_to_date(self, date_cols:list) -> pd.DataFrame:
+        self.df[date_cols] = self.df[date_cols].apply(
+            pd.to_datetime, format="%Y-%m-%d", errors="coerce"
+        )
+        return self.df
+
+    def viz_completeness(self) -> None:
+        x = (self.df.isnull().sum())
+        report = pd.DataFrame({
+            "column": x.index,
+            "missing": x.values,
+            "percentage": (x.values / len(self.df)) * 100,
+        }).sort_values(by="percentage", ascending=True)
+        plt.figure(figsize=(5, 3))
+        sns.barplot(x="column", y="percentage", data=report)
+        plt.title("Percentage of missing data")
+        plt.xticks(rotation=90)
+        plt.show()
+
+        
+
+
+
+
+
+
 #%%
 train_df = pd.read_parquet("data/output/train.parquet")
 dev_df = pd.read_parquet("data/output/dev.parquet")
