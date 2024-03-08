@@ -5,6 +5,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 #%%
+#Turn this into a class 
+
+#%%
 train_df = pd.read_parquet("data/output/train.parquet")
 dev_df = pd.read_parquet("data/output/dev.parquet")
 
@@ -95,7 +98,13 @@ for subaxis in sm:
 pic = sm[0][0].get_figure()
 
 # %%
-corr = train_df[['no_of_children', 'debt', 'income', 'age']].corr(method='pearson')
+corr = train_df[['no_of_children', 'debt', 'income', 'age', 'target']].corr(method='pearson')
 sns.heatmap(corr, annot=True)
 plt.show()
-# %%
+
+#%%
+sns.boxplot(x=train_df['target'], y=train_df['income'])
+plt.show()
+
+if __name__ == "__main__":
+    pass
