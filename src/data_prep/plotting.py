@@ -1,8 +1,12 @@
 '''This module contains the Plot class that holds methods for visualising the data'''
-#%%
+import os
+import sys
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+sys.path.append(PROJECT_ROOT)
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from src.data_prep import logger
 
 class Plot:
     ''' This class contains methods for visualising the data'''
@@ -23,11 +27,6 @@ class Plot:
         self.df = pd.read_parquet(self.file_path)
         return self.df
 
-    def viz_dtypes(self) -> None:
-        '''This method shows the datatypes of the columns in the dataframe'''
-        for col in self.df.columns:
-            print(f"{col}: {self.df[col].dtype}")
-
     def viz_completeness(self) -> None:
         '''This methods checks the completeness of the dataframe 
            and visualises it using a barplot'''
@@ -40,66 +39,75 @@ class Plot:
         plt.figure(figsize=(5, 3))
         sns.barplot(x="column", y="percentage", data=report)
         plt.title("Percentage of missing data")
+        plt.ylabel("Percentage (%)")
+        plt.xlabel("Columns")
         plt.xticks(rotation=90)
         plt.savefig(f"{self.output_dir}/eda_data_completeness.png", bbox_inches="tight")
 
-    def viz_numeric_summary(self, numeric_cols:list) -> pd.DataFrame:
-        '''This method returns the summary statistics of the numerical columns'''
-        num_df = self.df[numeric_cols]
-        x = num_df.describe().T
-        return x
-
-    def viz_numeric_distribution(self, numeric_cols:list) -> None:
-        '''This method visualises the distribution of the numerical columns 
-           using histograms'''
-        num_df = self.df[numeric_cols]
-        figs, axes = plt.subplots(3,1)
+    def viz_distribution(self, feature_type:str, cols:list, plot_type:str) -> None:
+        '''This method visualises the distribution of the columns 
+           using a defined plot type (histogram, boxplot, etc)'''
+        num_df = self.df[cols]
+        figs, axes = plt.subplots(len(cols),1)
         for i, column in enumerate(num_df.columns):
             num_df[column].plot(
-                kind ="hist",
+                kind = plot_type,
                 ax = axes.flatten()[i],
                 fontsize = "large"
             ).set_title(column)
-        figs.set_size_inches(7, 15)
+        figs.set_size_inches(7, 8)
         plt.tight_layout()
-        plt.show()
-
-    def viz_categorical_barplot(self, cat_cols:list) -> None:
-        '''This method visualises counts of each category in the 
-           categorical columns using barplots'''
-        cat_df = self.df[cat_cols]
-        figs, axes = plt.subplots(3,1)
-        for i, column in enumerate(cat_df.columns):
-            counts = cat_df[column].value_counts()
-            counts.plot(
-                kind ="bar",
-                ax = axes.flatten()[i],
-                fontsize = "large"
-            ).set_title(column)
-        figs.set_size_inches(7, 15)
-        plt.tight_layout()
-        plt.show()
+        plt.savefig(f"{self.output_dir}/eda_{feature_type}_distribution.png", bbox_inches="tight")
 
     def viz_bivariate_relationship(self, x:str, y:str) -> None:
         '''This method visualises the bivariate relationship between two 
            numeric columns using a scatter plot'''
         plt.figure(figsize=(6, 6))
         plt.scatter(self.df[x], self.df[y])
-        plt.xlabel(x)
-        plt.ylabel(y)
-        plt.show()
+        plt.xlabel(x.upper())
+        plt.ylabel(y.upper())
+        plt.title(f"{x} vs {y}")
+        plt.savefig(f"{self.output_dir}/eda_bivariate_relationship.png", bbox_inches="tight")
 
     def viz_linear_correlation(self, subset_col) -> None:
         '''This method visualises the linear correlation between
-           the subset columns/features'''
+           the numeric subset columns/features'''
         corr = self.df[subset_col].corr(method='pearson')
         sns.heatmap(corr, annot=True)
-        plt.show()
+        plt.savefig(f"{self.output_dir}/eda_linear_correlation.png", bbox_inches="tight")
+
+    def viz_monthly_trend(self, date_cols:list):
+        '''This method visualises the monthly trend of the data'''
+        self._convert_to_date(date_cols)
+        self.df["month"] = self.df[date_cols[0]].dt.month
+        self.df.groupby('month')['case_id'].count().plot(kind='line')
+        plt.title("Monthly trend")
+        plt.xlabel("Months")
+        plt.ylabel("Number of cases")
+        plt.savefig(f"{self.output_dir}/eda_monthly_trend.png", bbox_inches="tight")
+
+def main(file:str, output:str) -> None:
+    '''This is  a main function that generates the defined plots for data visualisation'''
+    example = Plot(file_path=file, output_dir=output)
+    example.load_data()
+    example.viz_completeness()
+    example.viz_distribution(cols=["debt", "income"], feature_type="numeric",
+                                     plot_type="hist")
+    example.viz_bivariate_relationship(x="debt", y="income")
+    example.viz_linear_correlation(subset_col=["debt", "income", "no_of_children"])
+    example.viz_monthly_trend(date_cols=['date_decision', 'dateofbirth'])
 
 #%%
 if __name__ == "__main__":
-    example = Plot(file_path="data/output/train.parquet", output_dir="artifacts/plots")
-    example.load_data()
-    example._convert_to_date(date_cols=["date_decision", "dateofbirth"])
-    example.viz_completeness()
+    PROJECT_STAGE = "Data Visualisation"
+    try:
+        logger.info(">>>>> Generating plots for data visualisation")
+        main(file="data/output/train.parquet", output="artifacts/plots")
+        logger.info(">>>> Plots generated successfully <<<<<<<")
+        logger.info(">>>>> Ended process for data visualisation <<<<< %s", PROJECT_STAGE)
 
+    except Exception as e:
+        logger.exception(e)
+        raise e
+
+#End of file
