@@ -43,6 +43,7 @@ class Plot:
         plt.xlabel("Columns")
         plt.xticks(rotation=90)
         plt.savefig(f"{self.output_dir}/eda_data_completeness.png", bbox_inches="tight")
+        plt.clf()
 
     def viz_distribution(self, feature_type:str, cols:list, plot_type:str) -> None:
         '''This method visualises the distribution of the columns 
@@ -58,6 +59,7 @@ class Plot:
         figs.set_size_inches(7, 8)
         plt.tight_layout()
         plt.savefig(f"{self.output_dir}/eda_{feature_type}_distribution.png", bbox_inches="tight")
+        plt.clf()
 
     def viz_bivariate_relationship(self, x:str, y:str) -> None:
         '''This method visualises the bivariate relationship between two 
@@ -68,6 +70,7 @@ class Plot:
         plt.ylabel(y.upper())
         plt.title(f"{x} vs {y}")
         plt.savefig(f"{self.output_dir}/eda_bivariate_relationship.png", bbox_inches="tight")
+        plt.clf()
 
     def viz_linear_correlation(self, subset_col) -> None:
         '''This method visualises the linear correlation between
@@ -75,6 +78,7 @@ class Plot:
         corr = self.df[subset_col].corr(method='pearson')
         sns.heatmap(corr, annot=True)
         plt.savefig(f"{self.output_dir}/eda_linear_correlation.png", bbox_inches="tight")
+        plt.clf()
 
     def viz_monthly_trend(self, date_cols:list):
         '''This method visualises the monthly trend of the data'''
@@ -85,6 +89,7 @@ class Plot:
         plt.xlabel("Months")
         plt.ylabel("Number of cases")
         plt.savefig(f"{self.output_dir}/eda_monthly_trend.png", bbox_inches="tight")
+        plt.clf()
 
 def main(file:str, output:str) -> None:
     '''This is  a main function that generates the defined plots for data visualisation'''
