@@ -1,12 +1,7 @@
-#%%
 '''This module is used to create the machine learning dataset'''
-import os
-import sys
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-sys.path.append(PROJECT_ROOT)
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from src.data_prep import logger
+from src import logger
 from src.data_prep import data_preprocess as dp
 
 def read_parent_data(file_paths:list) -> list:
@@ -133,12 +128,12 @@ if __name__ == "__main__":
     try:
         logger.info(">>>>>> Started <<<<<< %s", PROJECT_STAGE)
         INPUT_LIST = [
-        "data/raw/parquet_files/train/train_base.parquet",
-        "data/raw/parquet_files/train/train_static_cb_0.parquet",
-        "data/raw/parquet_files/train/train_person_1.parquet",
-        "data/raw/parquet_files/train/train_applprev_1_1.parquet"
+        "artifacts/data_prep/raw/parquet_files/train/train_base.parquet",
+        "artifacts/data_prep/raw/parquet_files/train/train_static_cb_0.parquet",
+        "artifacts/data_prep/raw/parquet_files/train/train_person_1.parquet",
+        "artifacts/data_prep/raw/parquet_files/train/train_applprev_1_1.parquet"
         ]
-        OUTPUT_DIR = "data/output"
+        OUTPUT_DIR = "artifacts/data_prep/output"
         main(input_paths=INPUT_LIST, output_path=OUTPUT_DIR)
         logger.info(">>>>>> Ended <<<<<< %s", PROJECT_STAGE)
 
@@ -147,6 +142,3 @@ if __name__ == "__main__":
         raise e
 
 #End of file
-
-
-# %%
