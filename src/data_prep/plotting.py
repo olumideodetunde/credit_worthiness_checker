@@ -1,12 +1,9 @@
 '''This module contains the Plot class that holds methods for visualising the data'''
-import os
-import sys
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
-sys.path.append(PROJECT_ROOT)
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from src.data_prep import logger
+from src import PROJECT_ROOT
+from src import logger
 
 class Plot:
     ''' This class contains methods for visualising the data'''
@@ -107,7 +104,7 @@ if __name__ == "__main__":
     PROJECT_STAGE = "Data Visualisation"
     try:
         logger.info(">>>>> Generating plots for data visualisation")
-        main(file="data/output/train.parquet", output="artifacts/plots")
+        main(file="artifacts/data_prep/output/train.parquet", output="artifacts/data_prep/plots")
         logger.info(">>>> Plots generated successfully <<<<<<<")
         logger.info(">>>>> Ended process for data visualisation <<<<< %s", PROJECT_STAGE)
 
