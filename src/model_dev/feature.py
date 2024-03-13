@@ -47,10 +47,18 @@ train_df = bin_family_size(train_df)
 def drop_columns(df:pd.DataFrame, cols:list):
     return df.drop(columns=cols)
 
-train_df = drop_columns(train_df, ['credit_status'])
+train_df = drop_columns(train_df, ['credit_status', "debt"])
 
 #%%
 def aggregate_marital_status(df:pd.DataFrame):
-    pass
+    #rename the none values to not disclosed
+    df['marital_status'] = df['marital_status'].fillna('not disclosed')
+    return df
 
+train_df = aggregate_marital_status(train_df)
 
+# %%
+#testing dropping all the rows with no age
+y = train_df.copy()
+y.dropna(subset=['age'], inplace=True)
+# %%
