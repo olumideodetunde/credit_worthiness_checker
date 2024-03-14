@@ -1,3 +1,5 @@
+'''This module is the main script for preparing ml dataset, visualising the data,
+training the model and exporting the model'''
 from src import logger
 from src.data_prep.make_dataset import main as data_prep_main
 from src.data_prep.plotting import main as data_plot_main
@@ -22,7 +24,8 @@ except Exception as e:
 PROJECT_STAGE = "Data Visualisation"
 try:
     logger.info(">>>>> Generating plots for data visualisation")
-    data_plot_main(file="artifacts/data_prep/output/train.parquet", output="artifacts/plots")
+    data_plot_main(file="artifacts/data_prep/output/train.parquet",
+                   output="artifacts/data_prep/plots")
     logger.info(">>>> Plots generated successfully <<<<<<<")
     logger.info(">>>>> Ended process for data visualisation <<<<< %s", PROJECT_STAGE)
 
