@@ -1,9 +1,7 @@
-
-
 #%%
 import pandas as pd
 import numpy as np
-
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 #%%
 train_df = pd.read_parquet("artifacts/data_prep/output/train.parquet")
@@ -23,7 +21,9 @@ train_df = calculate_age(train_df)
 
 def assign_time_of_year(df:pd.DataFrame):
     df['time_of_year'] = df['date_decision'].dt.month.apply(lambda x: 
-        'winter' if x in [12, 1, 2] else 'spring' if x in [3, 4, 5] else 'summer' if x in [6, 7, 8] else 'autumn')
+        'winter' if x in [12, 1, 2] else 'spring' 
+        if x in [3, 4, 5] else 'summer' 
+        if x in [6, 7, 8] else 'autumn')
     return df
 
 train_df = assign_time_of_year(train_df)
@@ -61,4 +61,22 @@ train_df = aggregate_marital_status(train_df)
 #testing dropping all the rows with no age
 y = train_df.copy()
 y.dropna(subset=['age'], inplace=True)
+
+#%%
+
+# Next step is transform the categorical and numerical columns to be ml ready
+def one_hot_encode(df:pd.DataFrame):
+    df = df.select_dtypes(include=['object'])
+    encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
+    cat_encoded = encoder.fit_transform(df)
+    cat_columns = []
+    for i, col in enumerate(df.columns):
+        for cat in encoder.categories_[i]:
+            cat_columns.append(f"{col}_{cat}")
+    cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
+    return cat_df
+
+transformed_cat_df = one_hot_encode(train_df)
+
+
 # %%
