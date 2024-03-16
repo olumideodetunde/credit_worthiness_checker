@@ -77,6 +77,19 @@ def drop_na_rows(df:pd.DataFrame, cols:str):
 train_df = drop_na_rows(train_df, 'age')
 
 #%%
+# Next step is to transform each numerica feature depending on my intuition - this will be used in training to obtain and see the effect of numeric features altered
+#Bin the ages & income
+def bin_feature(df:pd.DataFrame, col:str, col_bin:list, label:list) -> pd.DataFrame:
+    df[str(col) + '_binned'] = pd.cut(df[col], bins=col_bin,
+                                      labels=label, include_lowest=True)
+    return df
+
+train_df = bin_feature(train_df, col='age', col_bin=[0,25,50,125],
+                       label=['young', 'middle_aged', 'old'])
+train_df = bin_feature(train_df, col='income', col_bin=[0, 25000, 50000, 200000],
+                       label=['low', 'medium', 'high'])
+
+#%%
 # Next step is transform the categorical and numerical columns to be ml ready
 def one_hot_encode(df:pd.DataFrame, cat_col_list:list) -> pd.DataFrame:
     '''This function transforms the categorical columns to be ml ready'''
@@ -91,7 +104,26 @@ def one_hot_encode(df:pd.DataFrame, cat_col_list:list) -> pd.DataFrame:
     cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
     return cat_df
 
-transformed_cat_df = one_hot_encode(train_df, ['time_of_year', 'family_size', 'marital_status_new'])
+x = one_hot_encode(train_df, ['time_of_year', 'family_size', 'marital_status_new', 'age_binned', 'income_binned'])
+
+#%%
+#Log transform the income 
+def log_transform(df:pd.DataFrame, col:str):
+    df[str(col)+'_log_transformed'] = np.log(df[col]+1)
+    return df
+train_df = log_transform(train_df, 'income')
+
+#%%
+#Standardise numerical features
+def standardise(df: pd.DataFrame, cols: list):
+    scaler = StandardScaler()
+    for col in cols:
+        col_data = df[[col]]  # Extract column data as DataFrame
+        df[str(col)+'_standardised'] = scaler.fit_transform(col_data)  # Fit and transform
+    return df
+train_df = standardise(train_df, ['age', 'income'])
 
 # %%
-# Next step is to transform each numerica feature depending on my intuition - this will be used in training to obtain and see the effect of numeric features altered
+# Write a normalised function
+#Sort the joining of categorical and numerical features to create the ml ready data
+
