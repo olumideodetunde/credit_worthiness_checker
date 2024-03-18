@@ -5,34 +5,43 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 
 class FeatureEngineering:
-    
+
     def __init__(self, file_path:str):
         self.file_path = file_path
         self.raw_df = None
         self.df = None
+        
+    def _convert_to_date(self, date_cols:list) -> pd.DataFrame:
+        self.df[date_cols] = self.df[date_cols].apply(
+            pd.to_datetime, format="%Y-%m-%d", errors="coerce"
+        )
+        return self.df
     
+    def _fill_na(self, value:float) -> pd.DataFrame:
+        self.df = self.df.fillna(value)
+        return self.df
+
     def load_data(self) -> pd.DataFrame:
         self.raw_df = pd.read_parquet(self.file_path)
         self.df = self.raw_df.copy().reset_index(drop=True)
         return self.df
-    
+
     def drop_columns(self, cols:list) -> pd.DataFrame:
         self.df = self.df.drop(columns=cols)
         return self.df
-    
+
     def drop_rows(self, col_subset:str) -> pd.DataFrame:
         self.df = self.df.dropna(subset=col_subset).reset_index(drop=True)
         return self.df
+
+    def engineer_age(self) -> pd.DataFrame:
+        pass
     
-    def 
-
-
-
-
-
-
-
-
+    def bin_numerical_feature(self, cols:str, bins:list, labels:list) -> pd.DataFrame:
+        self.df[str(cols) + '_binned'] = pd.cut(self.df[cols], 
+                                            bins=bins, labels=labels, include_lowest=True)
+        return self.df
+    
 
 
 
