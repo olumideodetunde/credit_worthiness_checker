@@ -3,6 +3,40 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
+
+class FeatureEngineering:
+    
+    def __init__(self, file_path:str):
+        self.file_path = file_path
+        self.raw_df = None
+        self.df = None
+    
+    def load_data(self) -> pd.DataFrame:
+        self.raw_df = pd.read_parquet(self.file_path)
+        self.df = self.raw_df.copy().reset_index(drop=True)
+        return self.df
+    
+    def drop_columns(self, cols:list) -> pd.DataFrame:
+        self.df = self.df.drop(columns=cols)
+        return self.df
+    
+    def drop_rows(self, col_subset:str) -> pd.DataFrame:
+        self.df = self.df.dropna(subset=col_subset).reset_index(drop=True)
+        return self.df
+    
+    def 
+
+
+
+
+
+
+
+
+
+
+
+
 #%%
 raw_df = pd.read_parquet("artifacts/data_prep/output/train.parquet")
 raw_reset_df= raw_df.copy().reset_index(drop=True)
@@ -132,3 +166,5 @@ def create_ml_ready_df(dfs:list):
     df = df[sorted_cols]
     return df
 ml_df = create_ml_ready_df([train_df, x])
+
+#Make it a class and have it handle train, test and dev
