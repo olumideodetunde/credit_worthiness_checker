@@ -1,64 +1,78 @@
 #%%
+'''This module contains the FeatureEngineering class for engineering the data'''
+from typing import Union
 import pandas as pd
 import numpy as np
-from typing import Union
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 class FeatureEngineering:
+    '''This class contains methods for feature engineering the data'''
     def __init__(self, file_path:str):
         self.file_path = file_path
         self.raw_df = None
         self.cat_df = None
         self.df = None
+        self.transformed_df = None
 
     def _convert_to_date(self, date_cols:list) -> pd.DataFrame:
+        '''This method converts the date columns to datetime format'''
         self.df[date_cols] = self.df[date_cols].apply(
-            pd.to_datetime, format="%Y-%m-%d", errors="coerce"
-        )
+            pd.to_datetime, format="%Y-%m-%d", errors="coerce")
         return self.df
 
     def _fill_na(self, col:str, value:Union[str, int]) -> pd.DataFrame:
+        '''This method fills the missing values in the column with the specified value'''
         self.df[col] = self.df[col].fillna(value)
         return self.df
 
     def load_data(self) -> pd.DataFrame:
+        '''This method loads the data from the parquet filepath'''
         self.raw_df = pd.read_parquet(self.file_path)
         self.df = self.raw_df.copy().reset_index(drop=True)
         return self.df
 
     def drop_columns(self, cols:list) -> pd.DataFrame:
+        '''This method drops the specified columns from the dataframe'''
         self.df = self.df.drop(columns=cols)
         return self.df
 
     def drop_rows(self, col_subset:str) -> pd.DataFrame:
+        '''This method drops the rows with missing values in the 
+        specified columns from the dataframe'''
         self.df = self.df.dropna(subset=col_subset).reset_index(drop=True)
         return self.df
 
     def bin_numerical_feature(self, cols:str, bins:list, labels:list) -> pd.DataFrame:
-        self.df[str(cols) + '_binned'] = pd.cut(self.df[cols], 
+        '''This method bins the numerical columns into specified
+        bins and labels them accordingly'''
+        self.df[str(cols) + '_binned'] = pd.cut(self.df[cols],
                                             bins=bins, labels=labels, include_lowest=True)
         return self.df
-    
-    def engineer_age(self, date_cols:list) -> pd.DataFrame:
+
+    def engineer_age(self, date_cols:list, feature_name:str) -> pd.DataFrame:
+        '''This method calculates the age feature in the dataset'''
         self.df = self._convert_to_date(date_cols)
-        self.df['age'] = self.df[date_cols[0]].dt.year - self.df[date_cols[1]].dt.year
+        self.df[feature_name] = self.df[date_cols[0]].dt.year - self.df[date_cols[1]].dt.year
         return self.df
-    
+
     def engineer_time_of_year(self, date_col:str) -> pd.DataFrame:
-        self.df['time_of_year'] = self.df[date_col].dt.month.apply(lambda x: 
+        '''This method assigns the time of the year based on a date column'''
+        self.df['time_of_year'] = self.df[date_col].dt.month.apply(lambda x:
             'winter' if x in [12, 1, 2] else 'spring' 
-            if x in [3, 4, 5] else 'summer' 
+            if x in [3, 4, 5] else 'summer'
             if x in [6, 7, 8] else 'autumn')
         return self.df
-    
+
     def engineer_marital_status(self, col:str, value:str, grouping_dict:dict) -> pd.DataFrame:
-        self.df[col] = self._fill_na(col, value)
+        '''This method aggregates the marital status into broader categories '''
+        self._fill_na(col=col, value=value)
         self.df[col] = self.df[col].str.title()
         self.df[col+'_new'] = self.df[col]
         for group, values in grouping_dict.items():
             self.df.loc[self.df[col].isin(values), col+'_new'] = group
         return self.df
-    
+
     def one_hot_encode(self, cat_col_list:list) -> pd.DataFrame:
+        '''This method transforms the categorical columns to be ml ready'''
         cat = self.df[cat_col_list]
         encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
         cat_encoded = encoder.fit_transform(cat)
@@ -68,12 +82,14 @@ class FeatureEngineering:
                 cat_columns.append(f"{col}_{cat}")
         self.cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
         return self.cat_df
-    
+
     def log_transform(self, col:str) -> pd.DataFrame:
+        '''This method log transforms the specified column in the dataframe'''
         self.df[str(col)+'_log_transformed'] = np.log(self.df[col]+1)
         return self.df
-    
+
     def standardise_feature(self, cols:list, ml_datatype:str) -> pd.DataFrame:
+        '''This method standardises the numerical features in the dataframe'''
         scaler = StandardScaler()
         if ml_datatype == 'train':
             for col in cols:
@@ -84,159 +100,58 @@ class FeatureEngineering:
                 col_data = self.df[[col]]
                 self.df[str(col)+'_standardised'] = scaler.transform(col_data)
         return self.df
-    
-    def create_ml_ready_df(self, dfs:list) -> pd.DataFrame:
-        self.df = self.df.join(self.cat_df).set_index('case_id')
-        col_types = self.df.dtypes
+
+    def create_ml_ready_df(self) -> pd.DataFrame:
+        '''This method creates the ml ready dataframe with raw and transformed features'''
+        self.transformed_df = self.df.join(self.cat_df) #.set_index('case_id')
+        col_types = self.transformed_df.dtypes
         obj_col = col_types[col_types == 'object'].index.tolist()
         num_col = col_types[col_types != 'object'].index.tolist()
         sorted_cols = obj_col + num_col
-        self.df = self.df[sorted_cols]
-        return self.df
-    
-def main():
-    example = FeatureEngineering(file_path="artifacts/data_prep/output/train.parquet")
-    example.load_data()
-    example.engineer_age(['date_decision', 'dateofbirth'])
-    example.engineer_time_of_year('date_decision')
-    example.engineer_marital_status('marital_status', 'Not disclosed', grouping_dict)
-    example.one_hot_encode
-    example.log_transform('income')
-    example.standardise_feature(['age', 'income'], 'train')
-    example.create_ml_ready_df([train_df, x])
+        self.transformed_df = self.transformed_df[sorted_cols]
+        return self.transformed_df
+
+    def save_data(self, output_filepath:str) -> None:
+        '''This method saves the dataframe to the specified output filepath'''
+        self.df.to_parquet(output_filepath)
 
 #%%
+def main(input_filepath:str, output_filepath:str, ml_datatype) -> None:
+    '''This function executes the feature engineering process flow and logic on the data
+     and saves the transformed data to the output filepath'''
+    example = FeatureEngineering(file_path=input_filepath)
+    example.load_data()
+    example.engineer_age(date_cols=['date_decision', 'dateofbirth'], feature_name='age')
+    example.engineer_time_of_year(date_col='date_decision')
+    marital_dict = {
+    'Married': ['Married','Marriedmarried','Singlemarried','Widowedmarried',
+                'Divorcedmarried','Living_With_Partnermarried'], 
+    'Single':  ['Single', 'Singlesingle','Divorcedsingle','Widowedsingle',
+                'Marriedsingle','Living_With_Partnersingle'],
+    'Divorced': ['Divorced', 'Singledivorced', 'Marrieddivorced', 'Divorceddivorced',
+                 'Widoweddivorced', 'Living_With_Partnerdivorced'],
+    'Widowed': ['Widowed', 'Marriedwidowed', 'Singlewidowed', 'Divorcedwidowed',
+                'Widowedwidowed','Living_With_Partnerwidowed'],
+    'Not Supplying': ['Not Disclosed'],
+    'civil_partnership': ['Living_With_Partner','Singleliving_With_Partner','Marriedliving_With_Partner',
+    'Living_With_Partnerliving_With_Partner', 'Widowedliving_With_Partner', 'Divorcedliving_With_Partner']}
+    example.engineer_marital_status(col='marital_status', value='Not disclosed', grouping_dict=marital_dict)
+    example.bin_numerical_feature('age', bins=[0,25,50,125], labels=['young', 'middle_aged', 'old'])
+    example.bin_numerical_feature('income', bins=[0, 25000, 50000, 200000], labels=['low', 'medium', 'high'])
+    example._fill_na(col='no_of_children', value=0) #this needs to be fixed within the class to retain it as a private method
+    example.bin_numerical_feature('no_of_children', bins=[0, 1, 2, 10], labels=['single', 'small', 'large'])
+    example.drop_columns(cols=['credit_status', "debt"])
+    example.drop_rows(col_subset='age')
+    example.one_hot_encode(cat_col_list=['time_of_year','gender', 'no_of_children_binned',
+                                        'marital_status_new', 'age_binned', 'income_binned'])
+    example.log_transform(col='income')
+    example.standardise_feature(cols=['age', 'income'], ml_datatype=ml_datatype)
+    a = example.create_ml_ready_df()
+    #example.save_data(output_filepath)
+    
+    return a
+
 if __name__ == "__main__":
-    main()
-
-# #%%
-# raw_df = pd.read_parquet("artifacts/data_prep/output/train.parquet")
-# raw_reset_df= raw_df.copy().reset_index(drop=True)
-# train_df = raw_reset_df.copy()
-
-
-# #Filling the gaps, dropping and deriving new features
-# #%%
-# def calculate_age(df:pd.DataFrame):
-#     df[['date_decision', 'dateofbirth']] = df[['date_decision', 'dateofbirth']].apply(pd.to_datetime)
-#     df['age'] = (df['date_decision'] - df['dateofbirth']).dt.days // 365
-#     return df
-# train_df = calculate_age(train_df)
-
-# # %%
-# def assign_time_of_year(df:pd.DataFrame):
-#     df['time_of_year'] = df['date_decision'].dt.month.apply(lambda x: 
-#         'winter' if x in [12, 1, 2] else 'spring' 
-#         if x in [3, 4, 5] else 'summer' 
-#         if x in [6, 7, 8] else 'autumn')
-#     return df
-
-# train_df = assign_time_of_year(train_df)
-
-# # %%
-# def impute_no_of_children(df:pd.DataFrame):
-#     df['no_of_children'] = df['no_of_children'].fillna(0)
-#     return df
-# train_df = impute_no_of_children(train_df)
-
-# #%%
-# def bin_family_size(df:pd.DataFrame):
-#     df['family_size'] = df['no_of_children'].apply(lambda x: 'single' if x == 0 else 'small' if x < 2 else 'large')
-#     return df
-# train_df = bin_family_size(train_df)
-
-# # %%
-# def drop_columns(df:pd.DataFrame, cols:list):
-#     return df.drop(columns=cols)
-
-# train_df = drop_columns(train_df, ['credit_status', "debt"])
-
-# #%%
-# #marital status catgories is too noisy, I will group them into 5 categories
-# #grouping list  = ['Married', 'Single', 'Divorced', 'Widowed',civil_partnership, 'Not disclosed']
-# grouping_dict = {
-#                  'Married': ['Married','Marriedmarried','Singlemarried','Widowedmarried','Divorcedmarried','Living_With_Partnermarried'], 
-#                  'Single':  ['Single', 'Singlesingle','Divorcedsingle','Widowedsingle','Marriedsingle','Living_With_Partnersingle'],
-#                  'Divorced': ['Divorced', 'Singledivorced', 'Marrieddivorced', 'Divorceddivorced', 'Widoweddivorced', 'Living_With_Partnerdivorced'],
-#                  'Widowed': ['Widowed', 'Marriedwidowed', 'Singlewidowed', 'Divorcedwidowed', 'Widowedwidowed', 'Living_With_Partnerwidowed'],
-#                  'Not Supplying': ['Not Disclosed'],
-#                  'civil_partnership': ['Living_With_Partner','Singleliving_With_Partner','Marriedliving_With_Partner', 'Living_With_Partnerliving_With_Partner', 'Widowedliving_With_Partner', 'Divorcedliving_With_Partner']
-# }
-
-# def group_marital_status(df:pd.DataFrame, grouping_dict:dict):
-#     df['marital_status'] = df['marital_status'].fillna('Not disclosed')
-#     df['marital_status'] = df['marital_status'].str.title()
-#     df['marital_status_new'] = df['marital_status']
-#     for group, values in grouping_dict.items():
-#         df.loc[df['marital_status'].isin(values), 'marital_status_new'] = group
-#     return df
-
-# train_df = group_marital_status(train_df, grouping_dict)  
-
-# # %%
-# def drop_na_rows(df:pd.DataFrame, cols:str):
-#     return df.dropna(subset=cols).reset_index(drop=True)
-
-# train_df = drop_na_rows(train_df, 'age')
-
-# #%%
-# # Next step is to transform each numerica feature depending on my intuition - this will be used in training to obtain and see the effect of numeric features altered
-# #Bin the ages & income
-# def bin_feature(df:pd.DataFrame, col:str, col_bin:list, label:list) -> pd.DataFrame:
-#     df[str(col) + '_binned'] = pd.cut(df[col], bins=col_bin,
-#                                       labels=label, include_lowest=True)
-#     return df
-
-# train_df = bin_feature(train_df, col='age', col_bin=[0,25,50,125],
-#                        label=['young', 'middle_aged', 'old'])
-# train_df = bin_feature(train_df, col='income', col_bin=[0, 25000, 50000, 200000],
-#                        label=['low', 'medium', 'high'])
-
-# #%%
-# # Next step is transform the categorical and numerical columns to be ml ready
-# def one_hot_encode(df:pd.DataFrame, cat_col_list:list) -> pd.DataFrame:
-#     '''This function transforms the categorical columns to be ml ready'''
-#     # df = df.select_dtypes(include=['object'])
-#     cat_df = df[cat_col_list]
-#     encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
-#     cat_encoded = encoder.fit_transform(cat_df)
-#     cat_columns = []
-#     for i, col in enumerate(cat_df.columns):
-#         for cat in encoder.categories_[i]:
-#             cat_columns.append(f"{col}_{cat}")
-#     cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
-#     return cat_df
-
-# x = one_hot_encode(train_df, ['time_of_year','gender', 'family_size', 'marital_status_new', 'age_binned', 'income_binned'])
-
-# #%%
-# #Log transform the income 
-# def log_transform(df:pd.DataFrame, col:str):
-#     df[str(col)+'_log_transformed'] = np.log(df[col]+1)
-#     return df
-# train_df = log_transform(train_df, 'income')
-
-# #%%
-# #Standardise numerical features
-# def standardise_feature(df: pd.DataFrame, cols: list):
-#     #Handle standrisation for train, dev and test with scaler
-#     scaler = StandardScaler()
-#     for col in cols:
-#         col_data = df[[col]]  # Extract column data as DataFrame
-#         df[str(col)+'_standardised'] = scaler.fit_transform(col_data)  # Fit and transform
-#     return df
-# train_df = standardise_feature(train_df, ['age', 'income'])
-
-# #%%
-# #Create the ml reasy dataframe with raw and transformed features
-# def create_ml_ready_df(dfs:list):
-#     df = dfs[0].join(dfs[1]).set_index('case_id')
-#     col_types = df.dtypes
-#     obj_col = col_types[col_types == 'object'].index.tolist()
-#     num_col = col_types[col_types != 'object'].index.tolist()
-#     sorted_cols = obj_col + num_col
-#     df = df[sorted_cols]
-#     return df
-# ml_df = create_ml_ready_df([train_df, x])
-
-# #Make it a class and have it handle train, test and dev
+    y = main(input_filepath="artifacts/data_prep/output/train.parquet",
+         output_filepath="artifacts/data_prep/output/ml_train.parquet",
+         ml_datatype='train')
