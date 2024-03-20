@@ -1,9 +1,9 @@
-#%%
 '''This module contains the FeatureEngineering class for engineering the data'''
 from typing import Union
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from src import logger
 class FeatureEngineering:
     '''This class contains methods for feature engineering the data'''
     def __init__(self, file_path:str):
@@ -115,14 +115,10 @@ class FeatureEngineering:
         '''This method saves the dataframe to the specified output filepath'''
         self.df.to_parquet(output_filepath)
 
-#%%
 def main(input_filepath:str, output_filepath:str, ml_datatype) -> None:
     '''This function executes the feature engineering process flow and logic on the data
      and saves the transformed data to the output filepath'''
-    example = FeatureEngineering(file_path=input_filepath)
-    example.load_data()
-    example.engineer_age(date_cols=['date_decision', 'dateofbirth'], feature_name='age')
-    example.engineer_time_of_year(date_col='date_decision')
+
     marital_dict = {
     'Married': ['Married','Marriedmarried','Singlemarried','Widowedmarried',
                 'Divorcedmarried','Living_With_Partnermarried'], 
@@ -133,25 +129,43 @@ def main(input_filepath:str, output_filepath:str, ml_datatype) -> None:
     'Widowed': ['Widowed', 'Marriedwidowed', 'Singlewidowed', 'Divorcedwidowed',
                 'Widowedwidowed','Living_With_Partnerwidowed'],
     'Not Supplying': ['Not Disclosed'],
-    'civil_partnership': ['Living_With_Partner','Singleliving_With_Partner','Marriedliving_With_Partner',
-    'Living_With_Partnerliving_With_Partner', 'Widowedliving_With_Partner', 'Divorcedliving_With_Partner']}
-    example.engineer_marital_status(col='marital_status', value='Not disclosed', grouping_dict=marital_dict)
+    'civil_partnership': ['Living_With_Partner','Singleliving_With_Partner',
+                          'Marriedliving_With_Partner','Living_With_Partnerliving_With_Partner',
+                          'Widowedliving_With_Partner','Divorcedliving_With_Partner']}
+
+    example = FeatureEngineering(file_path=input_filepath)
+    example.load_data()
+    example.engineer_age(date_cols=['date_decision', 'dateofbirth'], feature_name='age')
+    example.engineer_time_of_year(date_col='date_decision')
+    example.engineer_marital_status(col='marital_status', value='Not disclosed',
+                                    grouping_dict=marital_dict)
     example.bin_numerical_feature('age', bins=[0,25,50,125], labels=['young', 'middle_aged', 'old'])
-    example.bin_numerical_feature('income', bins=[0, 25000, 50000, 200000], labels=['low', 'medium', 'high'])
-    example._fill_na(col='no_of_children', value=0) #this needs to be fixed within the class to retain it as a private method
-    example.bin_numerical_feature('no_of_children', bins=[0, 1, 2, 10], labels=['single', 'small', 'large'])
+    example.bin_numerical_feature('income', bins=[0, 25000, 50000, 200000],
+                                  labels=['low', 'medium', 'high'])
+    example._fill_na(col='no_of_children', value=0) #this needs to be fixed
+    example.bin_numerical_feature('no_of_children', bins=[0, 1, 2, 10],
+                                  labels=['single', 'small', 'large'])
     example.drop_columns(cols=['credit_status', "debt"])
     example.drop_rows(col_subset='age')
     example.one_hot_encode(cat_col_list=['time_of_year','gender', 'no_of_children_binned',
                                         'marital_status_new', 'age_binned', 'income_binned'])
     example.log_transform(col='income')
     example.standardise_feature(cols=['age', 'income'], ml_datatype=ml_datatype)
-    a = example.create_ml_ready_df()
-    #example.save_data(output_filepath)
-    
-    return a
+    example.create_ml_ready_df()
+    example.save_data(output_filepath)
 
 if __name__ == "__main__":
-    y = main(input_filepath="artifacts/data_prep/output/train.parquet",
-         output_filepath="artifacts/data_prep/output/ml_train.parquet",
-         ml_datatype='train')
+    PROJECT_STAGE = "Feature Engineering"
+    try:
+        logger.info(">>>>> Executing the feature engineering process")
+        dataset_type = ["train", "dev"]
+        for data_type in dataset_type:
+            main(input_filepath=f"artifacts/data_prep/output/{data_type}.parquet",
+                 output_filepath=f"artifacts/data_prep/output/ml_{data_type}.parquet",
+                 ml_datatype=data_type)
+            logger.info(">>>> {data_type} data has been transformed and saved \
+                successfully %s", data_type)
+        logger.info(">>>>> Ended process for feature engineering <<<<< %s", PROJECT_STAGE)
+    except Exception as e:
+        logger.exception(e)
+        raise e
