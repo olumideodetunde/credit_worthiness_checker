@@ -35,7 +35,7 @@ class FeatureEngineering:
         self.df = self.df.drop(columns=cols)
         return self.df
 
-    def drop_rows(self, col_subset:str) -> pd.DataFrame:
+    def drop_rows(self, col_subset:list) -> pd.DataFrame:
         '''This method drops the rows with missing values in the 
         specified columns from the dataframe'''
         self.df = self.df.dropna(subset=col_subset).reset_index(drop=True)
@@ -60,6 +60,13 @@ class FeatureEngineering:
             'winter' if x in [12, 1, 2] else 'spring' 
             if x in [3, 4, 5] else 'summer'
             if x in [6, 7, 8] else 'autumn')
+        return self.df
+
+    def engineer_family_size(self, col:str, value:str, new_col_name:str, bins:list, labels:str) -> pd.DataFrame:
+        '''This method calculates the family size based on the number of children'''
+        self._fill_na(col=col, value=value)
+        self.bin_numerical_feature(col, bins=bins, labels=labels)
+        self.df.rename(columns={col+'_binned': new_col_name}, inplace=True)
         return self.df
 
     def engineer_marital_status(self, col:str, value:str, grouping_dict:dict) -> pd.DataFrame:
@@ -115,7 +122,7 @@ class FeatureEngineering:
         '''This method saves the dataframe to the specified output filepath'''
         self.df.to_parquet(output_filepath)
 
-def main(input_filepath:str, output_filepath:str, ml_datatype) -> None:
+def main(input_filepath:str, output_filepath:str, ml_datatype:str) -> None:
     '''This function executes the feature engineering process flow and logic on the data
      and saves the transformed data to the output filepath'''
 
@@ -142,12 +149,11 @@ def main(input_filepath:str, output_filepath:str, ml_datatype) -> None:
     example.bin_numerical_feature('age', bins=[0,25,50,125], labels=['young', 'middle_aged', 'old'])
     example.bin_numerical_feature('income', bins=[0, 25000, 50000, 200000],
                                   labels=['low', 'medium', 'high'])
-    example._fill_na(col='no_of_children', value=0) #this needs to be fixed
-    example.bin_numerical_feature('no_of_children', bins=[0, 1, 2, 10],
-                                  labels=['single', 'small', 'large'])
+    example.engineer_family_size(col='no_of_children', value=0, new_col_name='family_size',
+                                bins=[0, 1, 2, 10], labels=['single', 'small', 'large'])
     example.drop_columns(cols=['credit_status', "debt"])
-    example.drop_rows(col_subset='age')
-    example.one_hot_encode(cat_col_list=['time_of_year','gender', 'no_of_children_binned',
+    example.drop_rows(col_subset=['age', 'family_size'])
+    example.one_hot_encode(cat_col_list=['time_of_year','gender', 'family_size',
                                         'marital_status_new', 'age_binned', 'income_binned'])
     example.log_transform(col='income')
     example.standardise_feature(cols=['age', 'income'], ml_datatype=ml_datatype)
@@ -158,8 +164,8 @@ if __name__ == "__main__":
     PROJECT_STAGE = "Feature Engineering"
     try:
         logger.info(">>>>> Executing the feature engineering process")
-        dataset_type = ["train", "dev"]
-        for data_type in dataset_type:
+        dataset = ["train", "dev"]
+        for data_type in dataset:
             main(input_filepath=f"artifacts/data_prep/output/{data_type}.parquet",
                  output_filepath=f"artifacts/data_prep/output/ml_{data_type}.parquet",
                  ml_datatype=data_type)
