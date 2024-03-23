@@ -1,9 +1,8 @@
-#%%
 '''This module contains the FeatureEngineering class for engineering the data'''
 from typing import Union
+from pickle import dump, load
 import pandas as pd
 import numpy as np
-from pickle import dump, load
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from src import logger
 class FeatureEngineering:
@@ -25,12 +24,12 @@ class FeatureEngineering:
         '''This method fills the missing values in the column with the specified value'''
         self.df[col] = self.df[col].fillna(value)
         return self.df
-    
+
     def _dump_object(self, obj:object, output_path:str) -> None:
         '''This method dumps the object to the specified output path'''
         with open(output_path, 'wb') as f:
             dump(obj, f)
-    
+
     def _load_object(self, input_path:str) -> object:
         '''This method loads the object from the specified input path'''
         with open(input_path, 'rb') as f:
@@ -75,7 +74,8 @@ class FeatureEngineering:
             if x in [6, 7, 8] else 'autumn')
         return self.df
 
-    def engineer_family_size(self, col:str, value:str, new_col_name:str, bins:list, labels:str) -> pd.DataFrame:
+    def engineer_family_size(self, col:str, value:str, new_col_name:str, bins:list,
+                             labels:str) -> pd.DataFrame:
         '''This method calculates the family size based on the number of children'''
         self._fill_na(col=col, value=value)
         self.bin_numerical_feature(col, bins=bins, labels=labels)
@@ -191,5 +191,3 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(e)
         raise e
-
-# %%
