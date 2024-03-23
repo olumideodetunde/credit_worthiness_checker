@@ -1,7 +1,9 @@
+#%%
 '''This module contains the FeatureEngineering class for engineering the data'''
 from typing import Union
 import pandas as pd
 import numpy as np
+from pickle import dump, load
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from src import logger
 class FeatureEngineering:
@@ -23,6 +25,17 @@ class FeatureEngineering:
         '''This method fills the missing values in the column with the specified value'''
         self.df[col] = self.df[col].fillna(value)
         return self.df
+    
+    def _dump_object(self, obj:object, output_path:str) -> None:
+        '''This method dumps the object to the specified output path'''
+        with open(output_path, 'wb') as f:
+            dump(obj, f)
+    
+    def _load_object(self, input_path:str) -> object:
+        '''This method loads the object from the specified input path'''
+        with open(input_path, 'rb') as f:
+            obj = load(f)
+        return obj
 
     def load_data(self) -> pd.DataFrame:
         '''This method loads the data from the parquet filepath'''
@@ -95,15 +108,18 @@ class FeatureEngineering:
         self.df[str(col)+'_log_transformed'] = np.log(self.df[col]+1)
         return self.df
 
-    def standardise_feature(self, cols:list, ml_datatype:str) -> pd.DataFrame:
+    def standardise_feature(self, cols:list, ml_datatype:str, path:str) -> pd.DataFrame:
         '''This method standardises the numerical features in the dataframe'''
         scaler = StandardScaler()
         if ml_datatype == 'train':
             for col in cols:
                 col_data = self.df[[col]]
-                self.df[str(col)+'_standardised'] = scaler.fit_transform(col_data)
+                scaler.fit(col_data)
+                self.df[str(col)+'_standardised'] = scaler.transform(col_data)
+                self._dump_object(scaler, f"{path}/{col}_scaler.pkl")
         else:
             for col in cols:
+                scaler = self._load_object(f"{path}/{col}_scaler.pkl")
                 col_data = self.df[[col]]
                 self.df[str(col)+'_standardised'] = scaler.transform(col_data)
         return self.df
@@ -139,7 +155,6 @@ def main(input_filepath:str, output_filepath:str, ml_datatype:str) -> None:
     'civil_partnership': ['Living_With_Partner','Singleliving_With_Partner',
                           'Marriedliving_With_Partner','Living_With_Partnerliving_With_Partner',
                           'Widowedliving_With_Partner','Divorcedliving_With_Partner']}
-
     example = FeatureEngineering(file_path=input_filepath)
     example.load_data()
     example.engineer_age(date_cols=['date_decision', 'dateofbirth'], feature_name='age')
@@ -156,7 +171,8 @@ def main(input_filepath:str, output_filepath:str, ml_datatype:str) -> None:
     example.one_hot_encode(cat_col_list=['time_of_year','gender', 'family_size',
                                         'marital_status_new', 'age_binned', 'income_binned'])
     example.log_transform(col='income')
-    example.standardise_feature(cols=['age', 'income'], ml_datatype=ml_datatype)
+    example.standardise_feature(cols=['age', 'income'], ml_datatype=ml_datatype,
+                                path="artifacts/model_dev")
     example.create_ml_ready_df()
     example.save_data(output_filepath)
 
@@ -175,3 +191,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(e)
         raise e
+
+# %%
