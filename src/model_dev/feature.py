@@ -1,3 +1,4 @@
+#%%
 '''This module contains the FeatureEngineering class for engineering the data'''
 from typing import Union
 from pickle import dump, load
@@ -91,17 +92,36 @@ class FeatureEngineering:
             self.df.loc[self.df[col].isin(values), col+'_new'] = group
         return self.df
 
-    def one_hot_encode(self, cat_col_list:list) -> pd.DataFrame:
+    def one_hot_encode(self, cat_col_list:list, ml_datatype:str, path:str) -> pd.DataFrame:
         '''This method transforms the categorical columns to be ml ready'''
         cat = self.df[cat_col_list]
-        encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
-        cat_encoded = encoder.fit_transform(cat)
-        cat_columns = []
-        for i, col in enumerate(cat.columns):
-            for cat in encoder.categories_[i]:
-                cat_columns.append(f"{col}_{cat}")
-        self.cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
+
+        if ml_datatype == 'train':
+            encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
+            cat_encoded = encoder.fit_transform(cat)
+            cat_columns = []
+            for i, col in enumerate(cat.columns):
+                for cat in encoder.categories_[i]:
+                    cat_columns.append(f"{col}_{cat}")
+            self.cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
+            self._dump_object(encoder, f"{path}/encoder.pkl")
+        else:
+            encoder = self._load_object(f"{path}/encoder.pkl")
+            cat_encoded = encoder.transform(cat)
+            cat_columns = []
+            for i, col in enumerate(cat.columns):
+                for cat in encoder.categories_[i]:
+                    cat_columns.append(f"{col}_{cat}")
+            self.cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
         return self.cat_df
+
+        # cat_encoded = encoder.fit(cat)
+        # cat_columns = []
+        # for i, col in enumerate(cat.columns):
+        #     for cat in encoder.categories_[i]:
+        #         cat_columns.append(f"{col}_{cat}")
+        # self.cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
+        #return self.cat_df
 
     def log_transform(self, col:str) -> pd.DataFrame:
         '''This method log transforms the specified column in the dataframe'''
@@ -169,7 +189,8 @@ def main(input_filepath:str, output_filepath:str, ml_datatype:str) -> None:
     example.drop_columns(cols=['credit_status', "debt"])
     example.drop_rows(col_subset=['age', 'family_size'])
     example.one_hot_encode(cat_col_list=['time_of_year','gender', 'family_size',
-                                        'marital_status_new', 'age_binned', 'income_binned'])
+                                        'marital_status_new', 'age_binned', 'income_binned'],
+                                        ml_datatype=ml_datatype, path="artifacts/model_dev")
     example.log_transform(col='income')
     example.standardise_feature(cols=['age', 'income'], ml_datatype=ml_datatype,
                                 path="artifacts/model_dev")
@@ -191,3 +212,5 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(e)
         raise e
+
+# %%
