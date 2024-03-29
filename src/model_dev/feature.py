@@ -91,7 +91,7 @@ class FeatureEngineering:
             self.df.loc[self.df[col].isin(values), col+'_new'] = group
         return self.df
 
-    def one_hot_encode(self, cat_col_list:list) -> pd.DataFrame:
+    def one_hot_encode(self, cat_col_list:list) -> pd.DataFrame: #BUG 
         '''This method transforms the categorical columns to be ml ready'''
         cat = self.df[cat_col_list]
         encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
