@@ -1,3 +1,4 @@
+#%%
 '''This module contains the FeatureEngineering class for engineering the data'''
 from typing import Union
 from pickle import dump, load
@@ -90,16 +91,26 @@ class FeatureEngineering:
         for group, values in grouping_dict.items():
             self.df.loc[self.df[col].isin(values), col+'_new'] = group
         return self.df
+    
+    def create_encoder(self, cat_col_list:list, path:str,  mldatatype:str) -> None:
+        '''This method creates the encoder object for the categorical columns'''
+        if mldatatype == 'train':
+            cat = self.df[cat_col_list]
+            encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
+            encoder.fit(cat)
+            self._dump_object(encoder, path+"/encoder.pkl")
+        else:
+            pass
 
-    def one_hot_encode(self, cat_col_list:list) -> pd.DataFrame: #BUG 
+    def one_hot_encode(self, cat_col_list:list, path:str) -> pd.DataFrame:
         '''This method transforms the categorical columns to be ml ready'''
+        encoder = self._load_object(path+"/encoder.pkl")
         cat = self.df[cat_col_list]
-        encoder = OneHotEncoder(sparse_output=False, handle_unknown='error')
-        cat_encoded = encoder.fit_transform(cat)
         cat_columns = []
+        cat_encoded = encoder.transform(cat)
         for i, col in enumerate(cat.columns):
-            for cat in encoder.categories_[i]:
-                cat_columns.append(f"{col}_{cat}")
+            for category in encoder.categories_[i]:
+                cat_columns.append(f"{col}_{category}")
         self.cat_df = pd.DataFrame(cat_encoded, columns=cat_columns)
         return self.cat_df
 
@@ -108,10 +119,10 @@ class FeatureEngineering:
         self.df[str(col)+'_log_transformed'] = np.log(self.df[col]+1)
         return self.df
 
-    def standardise_feature(self, cols:list, ml_datatype:str, path:str) -> pd.DataFrame:
+    def standardise_feature(self, cols:list, mldatatype:str, path:str) -> pd.DataFrame:
         '''This method standardises the numerical features in the dataframe'''
         scaler = StandardScaler()
-        if ml_datatype == 'train':
+        if mldatatype == 'train':
             for col in cols:
                 col_data = self.df[[col]]
                 scaler.fit(col_data)
@@ -126,7 +137,7 @@ class FeatureEngineering:
 
     def create_ml_ready_df(self) -> pd.DataFrame:
         '''This method creates the ml ready dataframe with raw and transformed features'''
-        self.transformed_df = self.df.join(self.cat_df) #.set_index('case_id')
+        self.transformed_df = self.df.join(self.cat_df)
         col_types = self.transformed_df.dtypes
         obj_col = col_types[col_types == 'object'].index.tolist()
         num_col = col_types[col_types != 'object'].index.tolist()
@@ -136,7 +147,7 @@ class FeatureEngineering:
 
     def save_data(self, output_filepath:str) -> None:
         '''This method saves the dataframe to the specified output filepath'''
-        self.df.to_parquet(output_filepath)
+        self.transformed_df.to_parquet(output_filepath)
 
 def main(input_filepath:str, output_filepath:str, ml_datatype:str) -> None:
     '''This function executes the feature engineering process flow and logic on the data
@@ -168,14 +179,20 @@ def main(input_filepath:str, output_filepath:str, ml_datatype:str) -> None:
                                 bins=[0, 1, 2, 10], labels=['single', 'small', 'large'])
     example.drop_columns(cols=['credit_status', "debt"])
     example.drop_rows(col_subset=['age', 'family_size'])
+    example.create_encoder(cat_col_list=['time_of_year','gender', 'family_size',
+                                        'marital_status_new', 'age_binned', 'income_binned'],
+                            path="artifacts/model_dev", mldatatype=ml_datatype)
     example.one_hot_encode(cat_col_list=['time_of_year','gender', 'family_size',
-                                        'marital_status_new', 'age_binned', 'income_binned'])
+                                        'marital_status_new', 'age_binned', 'income_binned'],
+                            path="artifacts/model_dev")
     example.log_transform(col='income')
-    example.standardise_feature(cols=['age', 'income'], ml_datatype=ml_datatype,
+    example.standardise_feature(cols=['age', 'income'], mldatatype=ml_datatype,
                                 path="artifacts/model_dev")
     example.create_ml_ready_df()
     example.save_data(output_filepath)
 
+
+#%%
 if __name__ == "__main__":
     PROJECT_STAGE = "Feature Engineering"
     try:
@@ -191,3 +208,4 @@ if __name__ == "__main__":
     except Exception as e:
         logger.exception(e)
         raise e
+# %%
