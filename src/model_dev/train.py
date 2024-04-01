@@ -1,6 +1,7 @@
 #%%
 import mlflow
 import pandas as pd
+from typing import Tuple
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
@@ -17,12 +18,12 @@ class ModelTrainer:
         self.model = None
         self.metrics = None
 
-    def _split_data_into_features_target(self, data):
+    def _split_data_into_features_target(self, data:pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series]:
         features = data.drop(columns=["target"])
         target = data["target"]
         return features, target
 
-    def _make_prediction(self, data) -> tuple:
+    def _make_prediction(self, data) -> Tuple[pd.Series, pd.Series]:
         features, target = self._split_data_into_features_target(data)
         predict = self.model.predict(features.iloc[:, 15:])
         y_score = self.model.predict_proba(features.iloc[:, 15:])[:,1]
@@ -82,30 +83,16 @@ def main():
         trainer.load_data("ml_train.parquet", "ml_dev.parquet")
         mlflow.log_param("train_data", trainer.train_data.describe())
         mlflow.log_param("dev_data", trainer.dev_data.describe())
-        trainer.select_model("RandomForestwq")
-        mlflow.log_param("algorithm", "RandomForest")
+        trainer.select_model("LogisticRegression")
+        mlflow.log_param("algorithm", "LogisticRegression")
         mlflow.log_param("hyperparameters", trainer.model.get_params())
         trainer.train_model()
         mlflow.log_param("model", trainer.model)
         metrics = trainer.evaluate_model()
         mlflow.log_metrics(metrics)
         trainer.end_training()
-
-#%%
+    return None
 if __name__ == "__main__":
     main()
-    # mlflow.set_experiment("CreditWorthinessTraining")
-    # with mlflow.start_run():
-    #     trainer = ModelTrainer(input_path="artifacts/data_prep/output")
-    #     trainer.load_data("ml_train.parquet", "ml_dev.parquet")
-    #     mlflow.log_param("train_data", trainer.train_data.describe())
-    #     mlflow.log_param("dev_data", trainer.dev_data.describe())
-    #     trainer.select_model("RandomForest")
-    #     mlflow.log_param("algorithm", "RandomForest")
-    #     mlflow.log_param("hyperparameters", trainer.model.get_params())
-    #     trainer.train_model()
-    #     mlflow.log_param("model", trainer.model)
-    #     metrics = trainer.evaluate_model()
-    #     mlflow.log_metrics(metrics)
-    #     trainer.end_training()
+
 # %%
