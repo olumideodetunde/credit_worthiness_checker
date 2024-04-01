@@ -1,7 +1,7 @@
 #%%
+from typing import Tuple
 import mlflow
 import pandas as pd
-from typing import Tuple
 from sklearn.dummy import DummyClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
