@@ -92,7 +92,6 @@ def main():
         mlflow.log_metrics(metrics)
         trainer.end_training()
     return None
+
 if __name__ == "__main__":
     main()
-
-# %%
