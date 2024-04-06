@@ -3,8 +3,9 @@ from typing import Tuple
 import mlflow
 import pandas as pd
 from sklearn.dummy import DummyClassifier
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from eval import eval_with_auc_and_pr_curve
 from eval import eval_with_average_precision_score
@@ -22,13 +23,7 @@ class ModelTrainer:
         features = data.drop(columns=["target"])
         target = data["target"]
         return features, target
-
-    def _make_prediction(self, data) -> Tuple[pd.Series, pd.Series]:
-        features, target = self._split_data_into_features_target(data)
-        predict = self.model.predict(features.iloc[:, 15:])
-        y_score = self.model.predict_proba(features.iloc[:, 15:])[:,1]
-        return predict, y_score
-
+    
     def load_data(self, train_name:str, dev_name:str) -> pd.DataFrame:
         try:
             self.train_data = pd.read_parquet(self.input_path + '/' + train_name)
@@ -39,23 +34,42 @@ class ModelTrainer:
 
     def select_model(self, algorithm:str, hyperparameters:dict=None) -> object:
         if algorithm == "RandomForest":
-            self.model = RandomForestClassifier()
+            if hyperparameters is None:
+                self.model = RandomForestClassifier()
+            else:
+                self.model = RandomForestClassifier(**hyperparameters)
         elif algorithm == "LogisticRegression":
-            self.model = LogisticRegression()
+            if hyperparameters is None:
+                self.model = LogisticRegression()
+            else:
+                self.model = LogisticRegression(**hyperparameters)
+        elif algorithm == "XGBoost":
+            if hyperparameters is None:
+                self.model = GradientBoostingClassifier()
+            else:
+                self.model = GradientBoostingClassifier(**hyperparameters)
+        elif algorithm == "RandomForest":
+            if hyperparameters is None:
+                self.model = RandomForestClassifier()
+            else:
+                self.model = RandomForestClassifier(**hyperparameters)
         elif algorithm == "Baseline":
             self.model = DummyClassifier(strategy="most_frequent")
         else:
             raise ValueError("Invalid algorithm")
         return self.model
 
-    def train_model(self) -> object:
+    def train_model(self, selected_features:list=None) -> object:
         train_features, train_target = self._split_data_into_features_target(self.train_data)
-        self.model.fit(train_features.iloc[:,15:], train_target)
+        self.model = self.model.fit(train_features[selected_features], train_target)
+        #self.model.fit(train_features.iloc[:,15:], train_target)
         return self.model
 
-    def evaluate_model(self) -> dict:
-        predict, y_score = self._make_prediction(self.dev_data)
-        _, dev_target = self._split_data_into_features_target(self.dev_data)
+    def evaluate_model(self, selected_features:str) -> dict:
+        # predict, y_score = self._make_prediction(self.dev_data, selected_features)
+        dev_features, dev_target = self._split_data_into_features_target(self.dev_data)
+        predict = self.model.predict(dev_features[selected_features])
+        y_score = self.model.predict_proba(dev_features[selected_features])[:,1]
         accuracy = accuracy_score(dev_target, predict)
         precision = precision_score(dev_target, predict)
         recall = recall_score(dev_target, predict)
@@ -79,19 +93,28 @@ class ModelTrainer:
 def main():
     mlflow.set_experiment("CreditWorthinessTraining")
     with mlflow.start_run():
+        training_features = ["gender_F", "gender_M", "age_standardised", 
+                             "income",'family_size_large', 
+                             'family_size_single','family_size_small',
+                             "no_of_children",'time_of_year_autumn',
+                             'time_of_year_spring', 'time_of_year_summer', 
+                             'time_of_year_winter',]
         trainer = ModelTrainer(input_path="artifacts/data_prep/output")
         trainer.load_data("ml_train.parquet", "ml_dev.parquet")
-        mlflow.log_param("train_data", trainer.train_data.describe())
-        mlflow.log_param("dev_data", trainer.dev_data.describe())
-        trainer.select_model("LogisticRegression")
-        mlflow.log_param("algorithm", "LogisticRegression")
+        # mlflow.log_param("train_data", str(trainer.train_data))
+        # mlflow.log_param("dev_data", str(trainer.dev_data))
+        trainer.select_model("RandomForest")
+        mlflow.log_param("algorithm", "RandomForest")
         mlflow.log_param("hyperparameters", trainer.model.get_params())
-        trainer.train_model()
+        trainer.train_model(selected_features=training_features)
+        mlflow.log_param("selected_features", training_features)
         mlflow.log_param("model", trainer.model)
-        metrics = trainer.evaluate_model()
+        metrics = trainer.evaluate_model(selected_features=training_features)
         mlflow.log_metrics(metrics)
         trainer.end_training()
     return None
 
+#%%
 if __name__ == "__main__":
     main()
+# %%
