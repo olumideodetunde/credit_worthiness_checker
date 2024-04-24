@@ -3,7 +3,7 @@ import pandas as pd
 import mlflow.sklearn
 from fastapi import FastAPI
 from pydantic import BaseModel
-from pred_app.backend.transform import Transform
+from backend.transform import Transform
 
 def make_prediction(data, model):
     y_pred = model.predict(data)
@@ -26,7 +26,7 @@ def test():
 
 @app.post("/predict", response_model=PredResponse, summary="Make a prediction")
 def predict(data:InputData):
-    model = mlflow.sklearn.load_model("/Users/olumide/Documents/Self Improvement - ML/MLapps/credit_worthiness_checker/artifacts/model_dev/model")
+    model = mlflow.sklearn.load_model("")
     feature = Transform(pd.DataFrame(data.dict(), index=[0]))
     feature.engineer_family_size(
         col="no_of_children",
@@ -35,11 +35,11 @@ def predict(data:InputData):
         labels=["single", "small", "large"],
     )
     feature.standardise_feature(["age", "income"], "test",
-                                "/Users/olumide/Documents/Self Improvement - ML/MLapps/credit_worthiness_checker/artifacts/model_dev")
+                                "")
     feature.one_hot_encode(
     cat_col_list=["gender",
                     "family_size"],
-    path="/Users/olumide/Documents/Self Improvement - ML/MLapps/credit_worthiness_checker/artifacts/model_dev")
+    path="")
     feature = feature.create_inference_df(required_features=['gender_F', 'gender_M',
                                                       'age_standardised', 'income', 
                                                       'family_size_large', 
