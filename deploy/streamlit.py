@@ -1,4 +1,3 @@
-#%%
 import json
 import requests
 import streamlit as st
@@ -18,7 +17,7 @@ data = {
 }
 
 if st.button("Check Credit Worthiness"):
-    response = requests.post(url='http://127.0.0.1:8000/predict',timeout=10, data=json.dumps(data))
+    response = requests.post(url='http://127.77.56.1:',timeout=10, data=json.dumps(data))
     output = response.text
     if output == "0":
         st.subheader("Congratulations! You are credit worthy")
