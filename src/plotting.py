@@ -2,7 +2,6 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from src import PROJECT_ROOT
 from src import logger
 
 class Plot:
@@ -99,12 +98,11 @@ def main(file:str, output:str) -> None:
     example.viz_linear_correlation(subset_col=["debt", "income", "no_of_children"])
     example.viz_monthly_trend(date_cols=['date_decision', 'dateofbirth'])
 
-#%%
 if __name__ == "__main__":
     PROJECT_STAGE = "Data Visualisation"
     try:
-        logger.info(">>>>> Generating plots for data visualisation")
-        main(file="artifacts/data_prep/output/train.parquet", output="artifacts/data_prep/plots")
+        logger.info(">>>>> Generating simple plots about the data")
+        main(file="artifacts/data/output/train.parquet", output="docs/media")
         logger.info(">>>> Plots generated successfully <<<<<<<")
         logger.info(">>>>> Ended process for data visualisation <<<<< %s", PROJECT_STAGE)
 
