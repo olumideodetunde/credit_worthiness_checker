@@ -10,10 +10,11 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import resample
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 import mlflow.sklearn
-from eval import eval_with_auc_and_pr_curve
-from eval import eval_with_average_precision_score
-from eval import eval_with_f_beta_score
+from src.eval import eval_with_auc_and_pr_curve
+from src.eval import eval_with_average_precision_score
+from src.eval import eval_with_f_beta_score
 
+#%%
 class ModelTrainer:
     def __init__(self, input_path:str) -> None:
         self.input_path = input_path
@@ -158,6 +159,4 @@ def main():
 
 #%%
 if __name__ == "__main__":
-    # trainer = ModelTrainer(input_path="artifacts/data_prep/output")
-    # trainer.load_data("ml_train.parquet", "ml_dev.parquet")
     main()
