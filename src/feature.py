@@ -248,7 +248,7 @@ def main(input_filepath: str, output_filepath: str, ml_datatype: str) -> None:
             "age_binned",
             "income_binned",
         ],
-        path="artifacts/model_dev",
+        path="artifacts/model",
         mldatatype=ml_datatype,
     )
     example.one_hot_encode(
@@ -260,17 +260,15 @@ def main(input_filepath: str, output_filepath: str, ml_datatype: str) -> None:
             "age_binned",
             "income_binned",
         ],
-        path="artifacts/model_dev",
+        path="artifacts/model",
     )
     example.log_transform(col="income")
     example.standardise_feature(
-        cols=["age", "income"], mldatatype=ml_datatype, path="artifacts/model_dev"
+        cols=["age", "income"], mldatatype=ml_datatype, path="artifacts/model"
     )
     example.create_ml_ready_df()
     example.save_data(output_filepath)
 
-
-# %%
 if __name__ == "__main__":
     PROJECT_STAGE = "Feature Engineering"
     try:
@@ -278,8 +276,8 @@ if __name__ == "__main__":
         dataset = ["train", "dev"]
         for data_type in dataset:
             main(
-                input_filepath=f"artifacts/data_prep/output/{data_type}.parquet",
-                output_filepath=f"artifacts/data_prep/output/ml_{data_type}.parquet",
+                input_filepath=f"artifacts/data/output/{data_type}.parquet",
+                output_filepath=f"artifacts/data/output/ml_{data_type}.parquet",
                 ml_datatype=data_type,
             )
             logger.info(
