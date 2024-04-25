@@ -23,7 +23,10 @@ def merge_features_into_df(dfs:list, on_col:str, join_type:str) -> pd.DataFrame:
     '''
     This function is to merge the individual features into a single dataframe
     '''
-    df_combined = pd.merge(dfs[0], dfs[1], on=on_col, how=join_type)
+    if len(dfs) == 1:
+        df_combined = dfs[0]
+    else:    
+        df_combined = pd.merge(dfs[0], dfs[1], on=on_col, how=join_type)
     return df_combined
 
 def create_consolicated_df(df:pd.DataFrame, new_colname:str) -> pd.DataFrame:
