@@ -1,0 +1,2 @@
+python = "^3.9"
+streamlit = "^0.89.0"
