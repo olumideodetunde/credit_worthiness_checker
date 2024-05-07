@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "src"
+version = "0.1.0"
+description = ""
+authors = ["Olumide Odetunde <odetundeolumide95@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pandas = "^2.2.0"
+jupyter = "^1.0.0"
+pyarrow = "^15.0.0"
+pickleshare = "^0.7.5"
+matplotlib = "^3.8.3"
+pylint = "^3.0.4"
+scikit-learn = "^1.4.1.post1"
+seaborn = "^0.13.2"
+black = "^24.3.0"
+mlflow = "^2.11.3"
+fastapi = "^0.111.0"
+pydantic = "^2.7.1"
+uvicorn = "^0.29.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
