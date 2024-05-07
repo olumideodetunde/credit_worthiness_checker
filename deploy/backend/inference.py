@@ -3,9 +3,7 @@ import pandas as pd
 import mlflow.sklearn
 from fastapi import FastAPI
 from pydantic import BaseModel
-import pandas as pd
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-#from transform import Transform
 
 class Transform:
     '''This class contains methods to transform the data in prep for inference'''
