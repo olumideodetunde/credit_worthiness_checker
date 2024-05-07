@@ -18,7 +18,7 @@ data = {
 }
 
 if st.button("Check Credit Worthiness"):
-    response = requests.post(url='http://localhost:8000/predict',timeout=10, data=json.dumps(data))
+    response = requests.post(url='https://credit-worthiness-checker-backend.fly.dev/predict',timeout=10, data=json.dumps(data))
     output = response.json()["prediction"]
     if output == 0:
         st.subheader(f"The model predicts {output} which means you are credit worthy. Congratulations!")
