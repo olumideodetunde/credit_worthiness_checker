@@ -1,8 +1,8 @@
 '''This module is used to create the machine learning dataset'''
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from src import logger
 from src import data_preprocess as dp
+from src import src_logger as logger
 
 def read_parent_data(file_paths:list) -> list:
     '''
