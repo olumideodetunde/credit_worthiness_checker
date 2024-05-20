@@ -59,3 +59,7 @@ try:
     OUTPUT_DIR = "artifacts/model_training/output"
     train_main(input_paths=INPUT_LIST, output_path=OUTPUT_DIR)
     logger.info(">>>>>> Ended <<<<<< %s", PROJECT_STAGE)
+except Exception as e:
+    logger.exception(e)
+    raise e
+#EOF
