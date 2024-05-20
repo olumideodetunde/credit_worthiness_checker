@@ -3,7 +3,7 @@
 #%%
 import pandas as pd
 import mlflow.sklearn
-from src.model_dev.feature import main as feature_main
+from src.feature import main as feature_main
 
 #%%
 test = pd.read_parquet("artifacts/data/output/dev.parquet")
