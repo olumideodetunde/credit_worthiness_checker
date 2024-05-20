@@ -2,7 +2,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from src import logger
+from src import src_logger as logger
 
 class Plot:
     ''' This class contains methods for visualising the data'''
