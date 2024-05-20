@@ -4,8 +4,7 @@ from pickle import dump, load
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from src import logger
-
+from src import src_logger as logger
 
 class FeatureEngineering:
     """This class contains methods for feature engineering the data"""
